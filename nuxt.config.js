@@ -3,13 +3,14 @@ import colors from 'vuetify/es5/util/colors'
 export default {
   // Target: https://go.nuxtjs.dev/config-target
   target: 'static',
+  ssr: false,
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
     titleTemplate: '%s - kadai-kanri',
     title: 'kadai-kanri',
     htmlAttrs: {
-      lang: 'en'
+      lang: 'ja'
     },
     meta: [
       { charset: 'utf-8' },
@@ -28,6 +29,7 @@ export default {
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
+    "plugins/firebase"
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -47,7 +49,7 @@ export default {
   vuetify: {
     customVariables: ['~/assets/variables.scss'],
     theme: {
-      dark: true,
+      dark: false,
       themes: {
         dark: {
           primary: colors.blue.darken2,
@@ -61,7 +63,9 @@ export default {
       }
     }
   },
-
+  publicRuntimeConfig: {
+    firebaseApiKey: process.env.VUE_APP_FIREBASE_API_KEY
+  },
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
   }

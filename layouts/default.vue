@@ -2,116 +2,135 @@
   <v-app dark>
     <v-navigation-drawer
       v-model="drawer"
-      :mini-variant="miniVariant"
-      :clipped="clipped"
       fixed
       app
+
     >
       <v-list>
+        <div class="text-center text-h6 ma-1">
+          参加しているグループ
+        </div>
         <v-list-item
-          v-for="(item, i) in items"
+          v-for="(group, i) in groups"
           :key="i"
-          :to="item.to"
+        >
+
+          <v-list-item-title>
+            <v-list-item-title v-text="group.title"/>
+          </v-list-item-title>
+        </v-list-item>
+        <v-list-item
+          to="/addGroup"
           router
           exact
         >
           <v-list-item-action>
-            <v-icon>{{ item.icon }}</v-icon>
+            <v-icon>
+              mdi-plus
+            </v-icon>
           </v-list-item-action>
           <v-list-item-content>
-            <v-list-item-title v-text="item.title" />
+            <v-list-item-title v-text="'グループを追加'"/>
           </v-list-item-content>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
     <v-app-bar
-      :clipped-left="clipped"
       fixed
       app
     >
-      <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-      <v-btn
-        icon
-        @click.stop="miniVariant = !miniVariant"
+      <v-app-bar-nav-icon @click="drawer = true"/>
+
+      <v-toolbar-title>Kadai-Kanri</v-toolbar-title>
+      <v-spacer></v-spacer>
+
+      <v-menu
+        offset-y
+        v-if="user.uid"
       >
-        <v-icon>mdi-{{ `chevron-${miniVariant ? 'right' : 'left'}` }}</v-icon>
-      </v-btn>
-      <v-btn
-        icon
-        @click.stop="clipped = !clipped"
-      >
-        <v-icon>mdi-application</v-icon>
-      </v-btn>
-      <v-btn
-        icon
-        @click.stop="fixed = !fixed"
-      >
-        <v-icon>mdi-minus</v-icon>
-      </v-btn>
-      <v-toolbar-title v-text="title" />
-      <v-spacer />
-      <v-btn
-        icon
-        @click.stop="rightDrawer = !rightDrawer"
-      >
-        <v-icon>mdi-menu</v-icon>
-      </v-btn>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-bind="attrs"
+            v-on="on"
+          >
+            <v-icon>
+              mdi-account-circle
+            </v-icon>
+            {{ user.displayName }}
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item>
+            <v-list-item-content>
+              UID:{{ user.uid }}
+            </v-list-item-content>
+          </v-list-item>
+          <v-list-item
+            @click="logout"
+          >
+            <v-list-item-content>
+              ログアウト
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+
+      </v-menu>
+      <div v-else>
+        ログイン
+      </div>
+
     </v-app-bar>
     <v-main>
       <v-container>
-        <Nuxt />
+        <Nuxt/>
       </v-container>
     </v-main>
-    <v-navigation-drawer
-      v-model="rightDrawer"
-      :right="right"
-      temporary
-      fixed
-    >
-      <v-list>
-        <v-list-item @click.native="right = !right">
-          <v-list-item-action>
-            <v-icon light>
-              mdi-repeat
-            </v-icon>
-          </v-list-item-action>
-          <v-list-item-title>Switch drawer (click me)</v-list-item-title>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
+
     <v-footer
-      :absolute="!fixed"
       app
     >
-      <span>&copy; {{ new Date().getFullYear() }}</span>
+      <span>&copy; {{ new Date().getFullYear() }} - Kisarazu Hackathon Team D</span>
     </v-footer>
   </v-app>
 </template>
 
 <script>
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+
 export default {
   name: 'DefaultLayout',
-  data () {
+  data() {
     return {
-      clipped: false,
       drawer: false,
-      fixed: false,
-      items: [
-        {
-          icon: 'mdi-apps',
-          title: 'Welcome',
-          to: '/'
-        },
-        {
-          icon: 'mdi-chart-bubble',
-          title: 'Inspire',
-          to: '/inspire'
+      groups: [],
+      user: {
+        uid: null,
+        displayName: null
+      }
+    }
+  },
+  mounted() {
+    onAuthStateChanged(getAuth(), (user) => {
+      if (user) {
+        this.$data.user = {
+          uid: user.uid,
+          displayName: user.displayName
         }
-      ],
-      miniVariant: false,
-      right: true,
-      rightDrawer: false,
-      title: 'Vuetify.js'
+
+
+      } else {
+        this.$data.user = {
+          uid: null,
+          displayName: null
+        }
+      }
+    })
+  },
+  methods: {
+    logout() {
+      if (getAuth().currentUser) {
+        getAuth().signOut();
+      }
     }
   }
 }
