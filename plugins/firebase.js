@@ -1,11 +1,10 @@
-
-
 import "firebaseui/dist/firebaseui.css";
 import firebase from "firebase/compat";
 import "firebase/auth";
 import * as firebaseui from 'firebaseui'
+import { getFirestore } from 'firebase/firestore'
 
-export default function ( nuxtApp ) {
+export default function (nuxtApp) {
 
 // Your web app's Firebase configuration
   const firebaseConfig = {
@@ -20,5 +19,5 @@ export default function ( nuxtApp ) {
 
 
   const app = firebase.initializeApp(firebaseConfig);
-
+  getFirestore(app)
 }

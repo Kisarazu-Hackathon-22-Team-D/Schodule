@@ -1,8 +1,10 @@
 <template>
-  <v-row justify="center" align="center">
-    <v-col cols="12" sm="8" md="6">
-      <v-calendar type="week"></v-calendar>
+  <v-container justify="center" >
+      <v-calendar  type="week">
+
+      </v-calendar>
       <v-btn
+        @click="addItem"
         color="primary"
         elevation="5"
         fab
@@ -10,8 +12,7 @@
       >
         <v-icon>mdi-plus</v-icon>
       </v-btn>
-    </v-col>
-  </v-row>
+  </v-container>
 </template>
 
 <script>
@@ -24,6 +25,11 @@ export default {
       hogehoge: 12345
     }
   },
+  methods:{
+    addItem(){
+      //イベント追加
+    }
+  }
 
 }
 </script>
