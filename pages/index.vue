@@ -1,5 +1,6 @@
 <template>
   <v-container justify="center" >
+    <FirebaseAuth></FirebaseAuth>
       <v-calendar  type="week">
 
       </v-calendar>
