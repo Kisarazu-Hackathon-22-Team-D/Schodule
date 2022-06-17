@@ -1,18 +1,19 @@
 <template>
-  <v-container justify="center" >
+  <v-container justify="center">
     <FirebaseAuth></FirebaseAuth>
-      <v-calendar  type="week">
+    <v-calendar type="week">
 
-      </v-calendar>
-      <v-btn
-        @click="addItem"
-        color="primary"
-        elevation="5"
-        fab
-        fixed bottom right
-      >
-        <v-icon>mdi-plus</v-icon>
-      </v-btn>
+    </v-calendar>
+    <v-btn
+      @click="addItem"
+      color="primary"
+      elevation="5"
+      fab
+      fixed bottom right
+    >
+      <v-icon>mdi-plus</v-icon>
+    </v-btn>
+    <EventDialog></EventDialog>
   </v-container>
 </template>
 
@@ -26,8 +27,8 @@ export default {
       hogehoge: 12345
     }
   },
-  methods:{
-    addItem(){
+  methods: {
+    addItem() {
       //イベント追加
     }
   }

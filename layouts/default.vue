@@ -96,6 +96,7 @@
 
 <script>
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { onSnapshot, doc, getFirestore ,getDoc} from 'firebase/firestore'
 
 export default {
   name: 'DefaultLayout',
@@ -110,12 +111,29 @@ export default {
     }
   },
   mounted() {
-    onAuthStateChanged(getAuth(), (user) => {
+    const db = getFirestore()
+    const auth = getAuth()
+
+    let unsubscribe;
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         this.$data.user = {
           uid: user.uid,
           displayName: user.displayName
         }
+        unsubscribe = onSnapshot(doc(db, "users", auth.currentUser.uid), (doc) => {
+          const data = doc.data()
+
+          if (data?.groups) {
+            const groups = data.groups//GIDのArray
+            this.$data.groups=[]
+            groups.forEach((it)=>{
+              getDoc(doc(db,"rooms",it)).then((d)=>{
+                this.$data.groups.push({id:it,name:d.data().roomName})
+              })
+            })
+          }
+        });
 
 
       } else {
@@ -123,6 +141,7 @@ export default {
           uid: null,
           displayName: null
         }
+        unsubscribe?.()
       }
     })
   },
