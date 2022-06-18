@@ -42,7 +42,7 @@
       fixed
       app
     >
-      <v-app-bar-nav-icon @click="drawer = true"/>
+      <v-app-bar-nav-icon @click="drawer = !drawer"/>
 
       <v-toolbar-title>Schodule</v-toolbar-title>
       <v-spacer></v-spacer>

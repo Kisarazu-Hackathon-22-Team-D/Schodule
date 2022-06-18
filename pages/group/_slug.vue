@@ -1,18 +1,84 @@
 <template>
   <v-container justify="center">
-    <p class="text-h2">{{ roomName }}</p>
-    <p class="text-h4" v-if="$refs.calendar">{{ $refs.calendar.title }}</p>
+    <p class="text-h2">{{ roomName }}
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            icon
+            @click="copyLink"
+            v-bind="attrs"
+            v-on="on"
+          >
+            <v-icon small>
+              mdi-content-copy
+            </v-icon>
+          </v-btn>
+        </template>
+        <span>招待リンクをコピー</span>
+      </v-tooltip>
+    </p>
+    <v-snackbar
+      v-model="snackbar"
+      :timeout="2000"
+    >
+      コピーしました
+      <template v-slot:action="{ attrs }">
+        <v-btn
+          color="blue"
+          text
+          v-bind="attrs"
+          @click="snackbar = false"
+        >
+          閉じる
+        </v-btn>
+      </template>
+    </v-snackbar>
+    <v-toolbar flat>
+      <v-btn
+        fab
+        text
+        small
+
+        @click="prev"
+      >
+        <v-icon small>
+          mdi-chevron-left
+        </v-icon>
+      </v-btn>
+      <v-toolbar-title v-if="$refs.calendar">{{ $refs.calendar.title }}</v-toolbar-title>
+      <v-btn
+        fab
+        small
+        text
+        @click="next"
+      >
+        <v-icon small>
+          mdi-chevron-right
+        </v-icon>
+      </v-btn>
+
+    </v-toolbar>
     <v-calendar
       ref="calendar"
       :events="events"
       v-model="value"
-      type="week"
-      color="primary"
-      locale="ja-jp"
-      @click:event="showEvent"
-    >
-      <template v-slot:interval="{minute}">
+      :type="calendarType"
 
+      color="primary"
+      :short-intervals="true"
+
+      interval-width="20"
+      event-overlap-mode="column"
+
+      interval-height="64"
+
+      @click:event="showEvent"
+      @change="updateRange"
+    >
+      <template v-slot:event="{ name,event, timed, eventSummary,timeSummary }">
+        <div class="v-calendar-event-custom">{{ event.name }}<br>
+          {{ event.subject }}
+        </div>
       </template>
       <template v-slot:day-body="{ date, week ,time}">
         <div
@@ -23,6 +89,7 @@
       </template>
 
     </v-calendar>
+
     <v-btn
       @click="openEventDialog"
       color="primary"
@@ -32,7 +99,7 @@
     >
       <v-icon>mdi-plus</v-icon>
     </v-btn>
-    <EventDialog @createdEvent="addEvent" v-model="dialog"></EventDialog>
+    <EventDialog @createdEvent="addEvent" v-model="dialog" :date="value"></EventDialog>
   </v-container>
 </template>
 
@@ -46,8 +113,10 @@ import firebase from 'firebase/compat'
 export default {
   data() {
     return {
+      snackbar: false,
+      calendarType: "week",
       dialog: false,
-      value: '',
+      value: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substring(0, 10),
       ready: false,
       userNameDictionary: {},
       events: [
@@ -76,43 +145,27 @@ export default {
       return this.cal ? this.cal.timeToY(this.cal.times.now) + 'px' : '-10px'
     },
   },
-  mounted() {
-    this.ready = true
-    this.scrollToTime()
-    this.updateTime()
-    const db = getFirestore()
-    const groupRef = doc(db, "groups", this.$data.groupID)
-    onSnapshot(groupRef, (document) => {
-      const groupData = document.data()
-      if (groupData) {
-        const events=groupData.events
-        console.log(events)
-        const r= events.map((e)=>{
-          const tmp=e
-          switch (tmp.time) {
-            case ConstTime.AllDay.id:{
-              tmp.start=tmp.date
-              break;
-            }
-            default:{
-              let o=Object.values(ConstTime).find(v=>v.id === tmp.time)
-              if (o) {
-
-                tmp.start=tmp.date+" "+o.timeRange[0]
-                tmp.end=tmp.date+" "+o.timeRange[1]
-              }
-
-            }
-          }
-          return tmp
-        })
-        console.log("r->",r)
-        this.doUpdate(r,  groupData.users)
-      }
-    })
-  },
   methods: {
-    showEvent(){
+    copyLink() {
+      if(navigator.clipboard){
+        navigator.clipboard.writeText(location.host+"/addGroup?id="+this.$data.groupID)
+        this.$data.snackbar = true
+      }
+
+    },
+    handleResize() {
+      this.$data.calendarType = window.innerWidth >= 960 ? "week" : "4day"
+    },
+    prev() {
+      this.$refs.calendar.prev()
+    },
+    next() {
+      this.$refs.calendar.next()
+    },
+    updateRange() {
+
+    },
+    showEvent() {
 
     },
     addEvent(event) {
@@ -148,12 +201,49 @@ export default {
     updateTime() {
       setInterval(() => this.cal.updateTimes(), 60 * 1000)
     },
-    doUpdate(events,userNameDic){
-      this.$data.events=events
-      this.$data.userNameDictionary=userNameDic
+    doUpdate(events, userNameDic) {
+      this.$data.events = events
+      this.$data.userNameDictionary = userNameDic
     }
   },
-  async asyncData({ params, error, redirect,app }) {
+  mounted() {
+    window.addEventListener("resize", this.handleResize);
+
+    this.ready = true
+    this.scrollToTime()
+    this.updateTime()
+    const db = getFirestore()
+    const groupRef = doc(db, "groups", this.$data.groupID)
+    onSnapshot(groupRef, (document) => {
+      const groupData = document.data()
+      if (groupData) {
+        const events = groupData.events
+        console.log(events)
+        const r = events.map((e) => {
+          const tmp = e
+          switch (tmp.time) {
+            case ConstTime.AllDay.id: {
+              tmp.start = tmp.date
+              break;
+            }
+            default: {
+              let o = Object.values(ConstTime).find(v => v.id === tmp.time)
+              if (o) {
+
+                tmp.start = tmp.date + " " + o.timeRange[0]
+                tmp.end = tmp.date + " " + o.timeRange[1]
+              }
+
+            }
+          }
+          return tmp
+        })
+        console.log("r->", r)
+        this.doUpdate(r, groupData.users)
+      }
+    })
+  },
+  async asyncData({ params, error, redirect, app }) {
     //参加認証
     const db = getFirestore()
     const groupID = params.slug
@@ -190,6 +280,7 @@ export default {
 </script>
 
 <style lang="scss">
+
 .v-current-time {
   height: 2px;
   background-color: #ea4335;
@@ -210,4 +301,8 @@ export default {
   }
 }
 
+.v-calendar-event-custom {
+  width: 100%;
+  padding: 2px;
+}
 </style>

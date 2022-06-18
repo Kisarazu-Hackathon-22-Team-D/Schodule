@@ -41,6 +41,7 @@ export default {
           requireDisplayName: true,
         },
         firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+        firebase.auth.TwitterAuthProvider.PROVIDER_ID,
         "microsoft.com"
       ],
     };

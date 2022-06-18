@@ -18,7 +18,7 @@
           </v-col>
 
         </v-row>
-        <v-btn :disabled="groupID===''" v-if="this.$data.state[0]!==4" @click="join" color="primary">
+        <v-btn :disabled="!groupID" v-if="this.$data.state[0]!==4" @click="join" color="primary">
           参加
         </v-btn>
         <v-btn v-else @click="tab=1">
@@ -134,7 +134,7 @@ export default {
 
         await setDoc(doc(usersRef, user.uid), {
           groups: arrayUnion(roomDoc.id)
-        })
+        }, { merge: true })
         console.log(roomDoc)
       }
       af().then((state) => {

@@ -82,7 +82,7 @@
                   :items="items"
                   item-text="text"
                   item-value="id"
-                  :rules="[ v => !!v || '時限は必須です']"
+                  :rules="[ v => v != null || '時限は必須です']"
                   label="時限"
                   required
                 ></v-select>
@@ -134,6 +134,10 @@ export default {
     model: {
       type: Boolean,
       default: false
+    },
+    date:{
+      type:String,
+      default: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substring(0, 10),
     }
   },
   computed: {
@@ -154,7 +158,7 @@ export default {
       subject:"",
       place:"",
       items:Object.values(ConstTime),
-      date: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substring(0, 10),
+      date:this.$props.date,
       time:null,
       memo:"",
       menu: false,
