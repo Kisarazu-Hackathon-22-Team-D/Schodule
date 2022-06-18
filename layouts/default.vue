@@ -44,7 +44,7 @@
     >
       <v-app-bar-nav-icon @click="drawer = true"/>
 
-      <v-toolbar-title>Kadai-Kanri</v-toolbar-title>
+      <v-toolbar-title>Schodule</v-toolbar-title>
       <v-spacer></v-spacer>
 
       <v-menu
@@ -158,7 +158,6 @@ export default {
   },
   methods: {
     openMenu(){
-      console.log("AAA")
       this.$data.drawer=true
     },
     logout() {

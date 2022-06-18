@@ -7,8 +7,8 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - kadai-kanri',
-    title: 'kadai-kanri',
+    titleTemplate: 'Schodule',
+    title: 'Schodule',
     htmlAttrs: {
       lang: 'ja'
     },

@@ -1,7 +1,7 @@
 <template>
   <v-container justify="center">
-    <p class="text-h2">Kadai-Kanri</p>
-    <p class="text-h4 ">課題を管理しよう</p>
+    <p class="text-h2">Schodule</p>
+    <p class="text-h4 ">みんなで課題を管理しよう</p>
     <FirebaseAuth v-if="!user"></FirebaseAuth>
 
     <div v-else>
