@@ -1,30 +1,42 @@
 <template>
-  <v-dialog v-model="dialog">
+  <v-dialog v-model="_model">
     <v-card>
         <v-card-title>
           <span class="text-h5">課題の追加</span>
         </v-card-title>
         <v-card-text>
-          <v-container>
+          <v-form
+            ref="form"
+            v-model="valid">
             <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  label="課題の名前"
+                  v-model="name"
+                  :rules="[ v => !!v || '名前は必須です']"
+                  required
+                ></v-text-field>
+              </v-col>
               <v-col
                 cols="12"
                 sm="6"
                 md="6"
               >
               <v-text-field
+                v-model="subject"
                   label="教科"
               ></v-text-field>
               </v-col>
-              
+
               <v-col
                 cols="12"
                 sm="6"
                 md="6"
               >
               <v-text-field
-                  label="提出先"
-                  hint="例:教室"
+                v-model="place"
+                  label="提出場所"
+                  hint="「教室」やTeamsのURLなど"
               ></v-text-field>
               </v-col>
 
@@ -53,8 +65,9 @@
                 </template>
                   <v-date-picker
                     v-model="date"
+                    locale="ja-jp"
                     @input="menu = false"
-                    @change="datePick">
+                  >
                   </v-date-picker>
                 </v-menu>
               </v-col>
@@ -65,26 +78,26 @@
                 md="6"
             >
                 <v-select
-                  :items="['1時限目', '2時限目', '3時限目', '4時限目', '5時限目', '6時限目', '7時限目', '8時限目', '終日']"
+                  v-model="time"
+                  :items="items"
+                  item-text="text"
+                  item-value="id"
+                  :rules="[ v => !!v || '時限は必須です']"
                   label="時限"
                   required
                 ></v-select>
               </v-col>
 
-              <v-col cols="12">
-                <v-text-field
-                  label="課題の名前"                  
-                ></v-text-field>
-              </v-col>
+
 
               <v-col cols="12">
                 <v-textarea
-                  label="メモ欄"
+                  label="メモ"
               ></v-textarea>
               </v-col>
 
             </v-row>
-          </v-container>
+          </v-form>
         </v-card-text>
 
         <v-card-actions>
@@ -92,15 +105,15 @@
           <v-btn
             color="blue darken-1"
             text
-            @click="dialog = false"
+            @click="_model = false"
           >
-            Close
+            閉じる
           </v-btn>
           <v-btn
-            color="primary"            
-            @click="dialog = false"
+            color="primary"
+            @click="createEvent"
           >
-            Save
+            追加
           </v-btn>
         </v-card-actions>
 
@@ -109,15 +122,60 @@
 </template>
 
 <script>
+import { ConstTime, Event } from '~/scripts/event'
+
 export default {
   name: "EventDialog",
-  data() {
-    return {
-      dialog: true,
-      date: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substring(0, 10),
-      menu: false,
+  model: {
+    prop: 'model',
+    event: 'change'
+  },
+  props: {
+    model: {
+      type: Boolean,
+      default: false
+    }
+  },
+  computed: {
+    _model: {
+      get () {
+        return this.model
+      },
+      set (value) {
+        this.$emit('change', value)
       }
     }
+  },
+  data() {
+    return {
+      valid: true,
+
+      name:"",
+      subject:"",
+      place:"",
+      items:Object.values(ConstTime),
+      date: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substring(0, 10),
+      time:null,
+      memo:"",
+      menu: false,
+      }
+    },
+  methods:{
+    createEvent(){
+      if (this.$refs.form.validate()) {
+        const e=new Event(
+          this.$data.name,
+          this.$data.date,
+          this.$data.time,
+          this.$data.subject,
+          this.$data.place,
+          this.$data.memo)
+        this.$emit("createdEvent",e)
+        this.$emit('change', false)
+      }
+
+    }
+  }
 
 }
 </script>

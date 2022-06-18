@@ -1,7 +1,17 @@
 <template>
   <v-container justify="center">
-    <FirebaseAuth></FirebaseAuth>
-    <v-calendar type="week">
+    <p class="text-h2">Kadai-Kanri</p>
+    <p class="text-h4 ">課題を管理しよう</p>
+    <FirebaseAuth v-if="!user"></FirebaseAuth>
+
+    <div v-else>
+      <p class="text-h3">ようこそ、{{user.displayName}} さん</p>
+      <div>ユーザーID:{{user.uid}}</div>
+      <v-btn @click="$nuxt.$emit('openDrawer')" color="primary">
+        始める
+      </v-btn>
+    </div>
+    <!--<v-calendar type="week">
 
     </v-calendar>
     <v-btn
@@ -13,25 +23,33 @@
     >
       <v-icon>mdi-plus</v-icon>
     </v-btn>
-    <EventDialog></EventDialog>
+    <EventDialog></EventDialog> Moved to group/_slug.vue-->
   </v-container>
 </template>
 
 <script>
+
+import { initFirebaseAuth } from '~/scripts/fireauthutils'
+
 export default {
   name: 'IndexPage',
   data() {
-    return {
-      isButtonPushed: false,
-      Nanika: "AAAA",
-      hogehoge: 12345
-    }
+    return {}
   },
   methods: {
-    addItem() {
-      //イベント追加
+  },
+  async asyncData() {
+    const user = await initFirebaseAuth()
+    if (user){
+      return {
+        user:{
+          uid: user.uid,
+          displayName: user.displayName
+        }
+      }
+    }else{
+      return {user:null}
     }
   }
-
 }
 </script>

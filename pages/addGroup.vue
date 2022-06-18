@@ -69,7 +69,7 @@ export default {
   data() {
     return {
       state: RoomState.None,
-      groupID: "",
+      groupID: this.$route.query.id,
       groupName: "",
       tab: null,
     }
@@ -123,7 +123,7 @@ export default {
         const user = getAuth().currentUser
         const fs = getFirestore();
         const roomsRef = collection(fs, "groups")
-
+        const usersRef = collection(fs, "users")
         const roomDoc = doc(roomsRef)
         await setDoc(roomDoc, {
           roomName: this.$data.groupName,
@@ -143,7 +143,8 @@ export default {
         } else {
           this.$data.state = RoomState.Created
         }
-      }).catch(() => {
+      }).catch((e) => {
+        console.error(e)
         this.$data.state = RoomState.CreateError
       })
     }

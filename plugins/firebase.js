@@ -3,6 +3,7 @@ import firebase from "firebase/compat";
 import "firebase/auth";
 import * as firebaseui from 'firebaseui'
 import { getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 
 export default function (nuxtApp) {
 
@@ -20,4 +21,5 @@ export default function (nuxtApp) {
 
   const app = firebase.initializeApp(firebaseConfig);
   getFirestore(app)
+  getAuth(app)
 }

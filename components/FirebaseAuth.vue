@@ -1,5 +1,6 @@
 <template>
   <div>
+    <p class="text-center">ログインまたは登録</p>
     <div id="firebaseui-auth-container"></div>
     <div id="loader">Loading...</div>
   </div>

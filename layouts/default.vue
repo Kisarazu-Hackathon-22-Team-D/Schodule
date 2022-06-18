@@ -11,12 +11,15 @@
           参加しているグループ
         </div>
         <v-list-item
-          v-for="(group, i) in groups"
-          :key="i"
+          v-for="group in groups"
+          :key="group.id"
+          :to="'/group/'+group.id"
+          router
+          exact
         >
 
           <v-list-item-title>
-            <v-list-item-title v-text="group.title"/>
+            <v-list-item-title v-text="group.name"/>
           </v-list-item-title>
         </v-list-item>
         <v-list-item
@@ -76,7 +79,7 @@
 
       </v-menu>
       <div v-else>
-        ログイン
+        ログインしていません
       </div>
 
     </v-app-bar>
@@ -96,10 +99,13 @@
 
 <script>
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { onSnapshot, doc, getFirestore ,getDoc} from 'firebase/firestore'
+import { onSnapshot, doc, getFirestore,getDocs ,getDoc,collection,query,where} from 'firebase/firestore'
 
 export default {
   name: 'DefaultLayout',
+  created() {
+    this.$nuxt.$on('openDrawer', this.openMenu)
+  },
   data() {
     return {
       drawer: false,
@@ -110,6 +116,7 @@ export default {
       }
     }
   },
+
   mounted() {
     const db = getFirestore()
     const auth = getAuth()
@@ -121,15 +128,18 @@ export default {
           uid: user.uid,
           displayName: user.displayName
         }
-        unsubscribe = onSnapshot(doc(db, "users", auth.currentUser.uid), (doc) => {
-          const data = doc.data()
 
+        unsubscribe = onSnapshot(doc(db, "users", user.uid), (d) => {
+          const data = d.data()
+
+          console.log(data)
           if (data?.groups) {
             const groups = data.groups//GIDのArray
             this.$data.groups=[]
             groups.forEach((it)=>{
-              getDoc(doc(db,"rooms",it)).then((d)=>{
-                this.$data.groups.push({id:it,name:d.data().roomName})
+              getDoc(doc(db,"groups",it)).then((userDoc)=>{
+                console.log(userDoc.data())
+                this.$data.groups.push({id:it,name:userDoc.data().roomName})
               })
             })
           }
@@ -141,11 +151,16 @@ export default {
           uid: null,
           displayName: null
         }
+        this.$router.push("/")
         unsubscribe?.()
       }
     })
   },
   methods: {
+    openMenu(){
+      console.log("AAA")
+      this.$data.drawer=true
+    },
     logout() {
       if (getAuth().currentUser) {
         getAuth().signOut();
