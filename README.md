@@ -1,4 +1,4 @@
-# kadai-kanri
+# Schodule
 
 ## Build Setup
 
