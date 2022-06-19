@@ -23,6 +23,8 @@ export class Event {
   memo
   editor
 
+
+
   constructor(name,//なまえ STR
               date,//日付 Dataフォーマット STR?
               time,//時限 ConstTime

@@ -73,7 +73,6 @@
       interval-height="64"
 
       @click:event="showEvent"
-      @change="updateRange"
     >
       <template v-slot:event="{ name,event, timed, eventSummary,timeSummary }">
         <div class="v-calendar-event-custom">{{ event.name }}<br>
@@ -87,24 +86,103 @@
           :style="{ top: nowY }"
         ></div>
       </template>
-
     </v-calendar>
-
-    <v-btn
-      @click="openEventDialog"
-      color="primary"
-      elevation="5"
-      fab
-      fixed bottom right
+    <v-menu
+      v-model="selectedOpen"
+      :close-on-content-click="false"
+      :activator="selectedElement"
+      offset-x
     >
-      <v-icon>mdi-plus</v-icon>
-    </v-btn>
-    <EventDialog @createdEvent="addEvent" v-model="dialog" :date="value"></EventDialog>
+      <v-card
+        color="grey lighten-4"
+        flat
+
+      >
+        <v-toolbar
+          :color="selectedEvent.color"
+          dense
+          short
+          dark
+        >
+          <v-toolbar-title v-html="selectedEvent.name"></v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="editStart">
+            <v-icon>mdi-pencil</v-icon>
+          </v-btn>
+        </v-toolbar>
+
+        <v-card-text>
+          <h3>期限</h3>
+          <span v-html="selectedEvent.start"></span><span v-if="selectedEvent.end"> ～ <span
+          v-html="selectedEvent.end"></span></span>
+
+          <div v-if="selectedEvent.subject"><h3>教科</h3>
+            <span v-html="selectedEvent.subject"></span></div>
+          <div v-if="selectedEvent.place"><h3>提出場所</h3>
+            <span v-html="selectedEvent.place"></span></div>
+
+          <div v-if="selectedEvent.memo"><h3>メモ</h3>
+            <span v-html="selectedEvent.memo"></span></div>
+
+          <div v-if="selectedEvent"><h3>最終編集</h3>
+
+            <span>{{ userNameDictionary[selectedEvent.editor] }}</span><br>
+            <span>{{ parseEventTimeStamp(selectedEvent) }}</span>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            text
+            color="secondary"
+            @click="selectedOpen = false"
+
+          >
+            閉じる
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-menu>
+
+    <v-dialog
+      persistent
+
+      v-model="dialog"
+    >
+      <template v-slot:activator="{ on, attrs }">
+
+        <v-btn
+          @click="openEventDialog"
+          color="primary"
+          elevation="5"
+          fab
+          fixed bottom right
+          v-bind="attrs"
+          v-on="on"
+        >
+          <v-icon>mdi-plus</v-icon>
+        </v-btn>
+      </template>
+      <EventDialogCard v-if="dialog" @createdEvent="addEvent" @editedEvent="editEvent"
+                       @close="dialogClosed"
+                       :edit-event="editTargetEvent"
+                       :initial-date="value"></EventDialogCard>
+    </v-dialog>
+
   </v-container>
 </template>
 
 <script>
-import { doc, getFirestore, getDoc, onSnapshot, setDoc, arrayUnion } from "firebase/firestore"
+import {
+  doc,
+  getFirestore,
+  getDoc,
+  onSnapshot,
+  setDoc,
+  arrayUnion,
+  arrayRemove,
+  writeBatch,
+  runTransaction
+} from "firebase/firestore"
 import { getAuth } from 'firebase/auth'
 import { initFirebaseAuth } from '~/scripts/fireauthutils'
 import { eventConverter, Event, ConstTime } from '~/scripts/event'
@@ -113,28 +191,21 @@ import firebase from 'firebase/compat'
 export default {
   data() {
     return {
+      dialog: false,
+
+      selectedEvent: {},
+      selectedElement: null,
+      selectedOpen: false,
+
+      editTargetEvent: null,
+
       snackbar: false,
       calendarType: "week",
-      dialog: false,
+
       value: (new Date(Date.now() - (new Date()).getTimezoneOffset() * 60000)).toISOString().substring(0, 10),
       ready: false,
       userNameDictionary: {},
-      events: [
-        {
-          name: '続・羅生門',
-          start: '2022-06-17 09:00',
-          end: '2022-06-17 11:00',
-        },
-        {
-          name: `Thomas' Birthday`,
-          start: '2022-06-17',
-        },
-        {
-          name: 'Mash Potatoes',
-          start: '2022-06-16',
-          end: '2022-06-16 15:30',
-        },
-      ],
+      events: [],
     }
   },
   computed: {
@@ -146,9 +217,19 @@ export default {
     },
   },
   methods: {
+    editStart() {
+      this.$data.editTargetEvent = this.$data.selectedEvent
+      this.$nextTick(() => {
+        this.$data.dialog = true
+      })
+    },
+    dialogClosed() {
+      this.$data.dialog = false
+      this.$data.editTargetEvent = null
+    },
     copyLink() {
-      if(navigator.clipboard){
-        navigator.clipboard.writeText(location.host+"/addGroup?id="+this.$data.groupID)
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(location.host + "/addGroup?id=" + this.$data.groupID)
         this.$data.snackbar = true
       }
 
@@ -162,10 +243,60 @@ export default {
     next() {
       this.$refs.calendar.next()
     },
-    updateRange() {
+    showEvent({ nativeEvent, event }) {
+      console.log(event)
+      const open = () => {
+        this.selectedEvent = event
+        this.selectedElement = nativeEvent.target
+        requestAnimationFrame(() => requestAnimationFrame(() => this.selectedOpen = true))
+      }
 
+      if (this.selectedOpen) {
+        this.selectedOpen = false
+        requestAnimationFrame(() => requestAnimationFrame(() => open()))
+      } else {
+        open()
+      }
+
+      nativeEvent.stopPropagation()
     },
-    showEvent() {
+    editEvent(event, original) {
+      const user = getAuth().currentUser
+      const db = getFirestore()
+      let writeEvent = event
+      writeEvent.editor = user.uid
+      writeEvent.finalUpdate = firebase.firestore.Timestamp.now();
+      const groupRef = doc(db, "groups", this.$data.groupID)
+      runTransaction(db, async (transaction) => {
+        const groupDoc = await transaction.get(groupRef);
+        if (!groupDoc.exists()) {
+          throw "Document does not exist!";
+        }
+        const groupData = groupDoc.data()
+        const eve = groupData.events.filter((v) => {
+          return !(v.name === original.name && v.date === original.date &&
+            v.time === original.time && v.subject === original.subject &&
+            v.place === original.place && v.memo === original.memo &&
+            v.editor === original.editor && v.finalUpdate.toDate().getTime() === original.finalUpdate.toDate().getTime())
+        }).map((v) => {
+          Object.assign({}, v)
+        })
+        eve.push(Object.assign({}, writeEvent))
+        console.log("eve=>",eve)
+        await transaction.update(groupRef, {
+            events: eve,
+          })
+        /*
+
+        transaction.set(doc(db, "groups", this.$data.groupID), {
+            events: arrayRemove( Object.assign({}, original)),
+          }
+          , { merge: true })*/
+      }).finally(()=>{
+        this.$data.editTargetEvent=null
+
+      });
+
 
     },
     addEvent(event) {
@@ -174,7 +305,6 @@ export default {
       let writeEvent = event
       writeEvent.editor = user.uid
       writeEvent.finalUpdate = firebase.firestore.Timestamp.now();
-      console.log()
       setDoc(doc(db, "groups", this.$data.groupID), {
           events: arrayUnion(Object.assign({}, writeEvent))
         }
@@ -204,11 +334,33 @@ export default {
     doUpdate(events, userNameDic) {
       this.$data.events = events
       this.$data.userNameDictionary = userNameDic
+    },
+    parseDateTime(event) {
+      const tmp = event
+      switch (tmp.time) {
+        case ConstTime.AllDay.id: {
+          tmp.start = tmp.date
+          break;
+        }
+        default: {
+          let o = Object.values(ConstTime).find(v => v.id === tmp.time)
+          if (o) {
+
+            tmp.start = tmp.date + " " + o.timeRange[0]
+            tmp.end = tmp.date + " " + o.timeRange[1]
+          }
+
+        }
+      }
+      return tmp
+    },
+    parseEventTimeStamp(e) {
+      return e?.finalUpdate?.toDate()
     }
   },
   mounted() {
     window.addEventListener("resize", this.handleResize);
-
+    this.$refs.calendar.checkChange()
     this.ready = true
     this.scrollToTime()
     this.updateTime()
@@ -217,26 +369,10 @@ export default {
     onSnapshot(groupRef, (document) => {
       const groupData = document.data()
       if (groupData) {
-        const events = groupData.events
+        const events = groupData?.events
         console.log(events)
-        const r = events.map((e) => {
-          const tmp = e
-          switch (tmp.time) {
-            case ConstTime.AllDay.id: {
-              tmp.start = tmp.date
-              break;
-            }
-            default: {
-              let o = Object.values(ConstTime).find(v => v.id === tmp.time)
-              if (o) {
-
-                tmp.start = tmp.date + " " + o.timeRange[0]
-                tmp.end = tmp.date + " " + o.timeRange[1]
-              }
-
-            }
-          }
-          return tmp
+        const r = events?.map((e) => {
+          return this.parseDateTime(e)
         })
         console.log("r->", r)
         this.doUpdate(r, groupData.users)
